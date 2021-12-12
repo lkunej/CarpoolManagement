@@ -1,0 +1,72 @@
+[
+  {
+    "Name": "Mustang for quick support",
+    "Type": "Ford Mustang",
+    "Color": "Red",
+    "Plates": "ZG-0000-AA",
+    "NumOfSeats": 4
+  },
+  {
+    "Name": "Fiat for around town",
+    "Type": "Fiat Punto",
+    "Color": "Blue",
+    "Plates": "ZG-0000-AB",
+    "NumOfSeats": 4
+  },
+  {
+    "Name": "Chevrolet for cruising",
+    "Type": "Chevrolet Cruze",
+    "Color": "White",
+    "Plates": "ZG-9969-HK",
+    "NumOfSeats": 5
+  },
+  {
+    "Name": "Smart for short rides",
+    "Type": "Smart",
+    "Color": "Blue/Black",
+    "Plates": "ZG-0000-AC",
+    "NumOfSeats": 2
+  },
+  {
+    "Name": "Yellow Lamborgini for showing off",
+    "Type": "Lamborgini Diablo",
+    "Color": "Yellow",
+    "Plates": "ZG-0000-AD",
+    "NumOfSeats": 2
+  },
+  {
+    "Name": "Honda for lots of people",
+    "Type": "Honda Pilot",
+    "Color": "Red",
+    "Plates": "ZG-0000-AE",
+    "NumOfSeats": 8
+  },
+  {
+    "Name": "Green Škoda for travel",
+    "Type": "Škoda Octavia",
+    "Color": "Green",
+    "Plates": "ZG-0000-AF",
+    "NumOfSeats": 5
+  },
+  {
+    "Name": "Limo for special occasions",
+    "Type": "Lincoln MKS Limousine",
+    "Color": "Black",
+    "Plates": "ZG-0000-AG",
+    "NumOfSeats": 9
+  },
+  {
+    "Name": "Golf for short travels",
+    "Type": "VW Golf",
+    "Color": "Blue",
+    "Plates": "ZG-0000-AH",
+    "NumOfSeats": 5
+  },
+  {
+    "Name": "Nissan Murano for long travels",
+    "Type": "Nissan Murano",
+    "Color": "Gold",
+    "Plates": "ZG-0000-AI",
+    "NumOfSeats": 5
+  }
+]
