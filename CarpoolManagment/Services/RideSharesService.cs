@@ -47,27 +47,17 @@ namespace CarpoolManagment.Services
         }
         /** Method to create a new RideShare object 
          *  
-         * 
+         *  Checks if number of wanted employees is more than the vehicles capacity
+         *  Checks if at least one employee has a drivers license
+         *  Checks if the wanted car is available for chosen time range
+         *  
          * **/
         public async Task CreateRideShare(RideShare rideShare)
         {
             try
             {
-                // Check if car exists
-                var car = await _context.Cars.FindAsync(rideShare.CarId);
-                if (car == null) throw new ValidationException(string.Format("Car with id={0} doesn't exist.", rideShare.CarId));
-
-                // Check if all employees can fit
-                if (rideShare.Employees.Count > car.NumOfSeats) throw new ValidationException(string.Format("Only {0} employees can fit in this vehicle.", car.NumOfSeats));
-
-                // Check if at least one employee has a license
-                if (!rideShare.Employees.Any(e => e.IsDriver == true)) throw new ValidationException("At least one passenger must be a driver.");
-
-                // Check if car is available
-                if (!CheckIfCarIsAvailable(car.CarId, rideShare.StartDate, rideShare.EndDate))
-                {
-                    throw new ValidationException(string.Format("Car with id={0} isn't available for chosen dates.", rideShare.CarId));
-                }
+                // Check if it's possible to create rideShare with wanted input
+                await CheckRidesharePrerequisite(rideShare);
 
                 _context.RideShares.Add(rideShare);
                 await _context.SaveChangesAsync();
@@ -80,25 +70,13 @@ namespace CarpoolManagment.Services
             }
         }
 
+        /** Method to update an existing RideShare object **/
         public async Task UpdateRideShare(RideShare rideShare)
         {
             try
             {
-                // Check if car exists
-                var car = await _context.Cars.FindAsync(rideShare.CarId);
-                if (car == null) throw new ValidationException(string.Format("Car with id={0} doesn't exist.", rideShare.CarId));
-
-                // Check if all employees can fit
-                if (rideShare.Employees.Count > car.NumOfSeats) throw new ValidationException(string.Format("Only {0} employees can fit in this vehicle.", car.NumOfSeats));
-
-                // Check if at least one employee has a license
-                if (!rideShare.Employees.Any(e => e.IsDriver == true)) throw new ValidationException("At least one passenger must be a driver.");
-
-                // Check if car is available
-                if (!CheckIfCarIsAvailable(car.CarId, rideShare.StartDate, rideShare.EndDate, rideShare.RideShareId))
-                {
-                    throw new ValidationException(string.Format("Car with id={0} isn't available for chosen dates.", rideShare.CarId));
-                }
+                // Check if it's possible to create rideShare with wanted input
+                await CheckRidesharePrerequisite(rideShare);
 
                 _context.Entry(rideShare).State = EntityState.Modified;
 
@@ -112,37 +90,7 @@ namespace CarpoolManagment.Services
             }
         }
 
-        private bool CheckIfCarIsAvailable(int carId, DateTime start, DateTime end, int? rideShareId=null)
-        {
-            try
-            {
-                // Get all rides that use this car
-                List<RideShare> rideShares = new List<RideShare>();
-                if (rideShareId.HasValue)
-                {
-                    rideShares = _context.RideShares
-                        .Where(r => r.CarId == carId && r.RideShareId != rideShareId).ToList();
-                } else
-                {
-                    rideShares = _context.RideShares.Where(r => r.CarId == carId).ToList();
-                }
-                
-
-                foreach(var r in rideShares)
-                {
-                    bool overlapping = start < r.EndDate && r.StartDate < end;
-                    if (overlapping) return false;
-                }
-
-                // No overlapping dates, vehicle is available for chosen dates.
-                return true;
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
-        }
-
+        /** Method to delete an existing RideShare object by id**/
         public async Task<RideShare> DeleteRideShare(int id)
         {
             try
@@ -160,5 +108,57 @@ namespace CarpoolManagment.Services
                 throw;
             }
         }
+
+        /** Helper method to check if vehicle is available for given time range **/
+        private bool CheckIfCarIsAvailable(int carId, DateTime start, DateTime end, int? rideShareId=null)
+        {
+            // Get all rides that use this car
+            List<RideShare> rideShares = new List<RideShare>();
+            if (rideShareId.HasValue)
+            {
+                rideShares = _context.RideShares
+                    .Where(r => r.CarId == carId && r.RideShareId != rideShareId).ToList();
+            } else
+            {
+                rideShares = _context.RideShares.Where(r => r.CarId == carId).ToList();
+            }
+                
+
+            foreach(var r in rideShares)
+            {
+                bool overlapping = start < r.EndDate && r.StartDate < end;
+                if (overlapping) return false;
+            }
+
+            // No overlapping dates, vehicle is available for chosen dates.
+            return true;
+
+        }
+
+        /** Helper method to preform logical checks needed before creating/updating a RideShare object 
+         * 
+         *  Checks if number of wanted employees is more than the vehicles capacity
+         *  Checks if at least one employee has a drivers license
+         *  Checks if the wanted car is available for chosen time range
+         *  **/
+        private async Task CheckRidesharePrerequisite(RideShare rideShare)
+        {
+            // Check if car exists
+            var car = await _context.Cars.FindAsync(rideShare.CarId);
+            if (car == null) throw new ValidationException(string.Format("Car with id={0} doesn't exist.", rideShare.CarId));
+
+            // Check if all employees can fit
+            if (rideShare.Employees.Count > car.NumOfSeats) throw new ValidationException(string.Format("Only {0} employees can fit in this vehicle.", car.NumOfSeats));
+
+            // Check if at least one employee has a license
+            if (!rideShare.Employees.Any(e => e.IsDriver == true)) throw new ValidationException("At least one passenger must be a driver.");
+
+            // Check if car is available
+            if (!CheckIfCarIsAvailable(car.CarId, rideShare.StartDate, rideShare.EndDate, rideShare.RideShareId))
+            {
+                throw new ValidationException(string.Format("Car with id={0} isn't available for chosen dates.", rideShare.CarId));
+            }
+        }
+        
     }
 }

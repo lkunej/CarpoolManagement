@@ -94,6 +94,33 @@ namespace CarpoolManagment.Controllers
             
         }
 
+        // POST: api/RideShares
+        /** Endpoint to create a new RideShare object **/
+        [HttpPost]
+        public async Task<JsonResult> PostRideShare(RideShare rideShare)
+        {
+            try
+            {
+                await _service.CreateRideShare(rideShare);
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    message = "Success",
+                    statusCode = StatusCodes.Status200OK
+                });
+            }
+            catch (Exception e)
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = e.Message,
+                    statusCode = StatusCodes.Status500InternalServerError
+                });
+            }
+        }
+
         // PUT: api/RideShares/1
         /** Endpoint to update an existing RideShare object
          *  Params: id -> Id of rideshare object to update
@@ -143,33 +170,6 @@ namespace CarpoolManagment.Controllers
                 });
             }
             
-        }
-
-        // POST: api/RideShares
-        /** Endpoint to create a new RideShare object **/
-        [HttpPost]
-        public async Task<JsonResult> PostRideShare(RideShare rideShare)
-        {
-            try
-            {
-                await _service.CreateRideShare(rideShare);
-
-                return new JsonResult(new
-                {
-                    success = true,
-                    message = "Success",
-                    statusCode = StatusCodes.Status200OK
-                });
-            }
-            catch (Exception e)
-            {
-                return new JsonResult(new
-                {
-                    success = false,
-                    message = e.Message,
-                    statusCode = StatusCodes.Status500InternalServerError
-                });
-            }
         }
 
         // DELETE: api/RideShares/5
