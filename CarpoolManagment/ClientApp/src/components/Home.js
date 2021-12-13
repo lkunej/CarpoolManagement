@@ -33,8 +33,8 @@ export class Home extends Component {
                 return (
                     <tr key={item.rideShareId}>
                         <td className="h3 align-middle">{item.startLocation} &#10132; {item.endLocation}</td>
-                        <td className="h4 align-middle">{moment(item.startDate).format('DD-MM-YYYY HH:mm')}</td>
-                        <td className="h4 align-middle">{moment(item.endDate).format('DD-MM-YYYY HH:mm')}</td>
+                        <td className="h4 align-middle">{moment(item.startDate).format('DD/MM/YYYY HH:mm')}</td>
+                        <td className="h4 align-middle">{moment(item.endDate).format('DD/MM/YYYY HH:mm')}</td>
                         <td className="align-middle">
                             <p className="m-0"><strong>{item.car.name}</strong></p>
                             <p className="m-0">{item.car.type} - {item.car.plates}</p>

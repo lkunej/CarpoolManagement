@@ -204,5 +204,35 @@ namespace CarpoolManagement.Controllers
                 });
             }
         }
+
+
+        // This method should be replaced to CarsController, not sure if I'll have time to seperate service and controller for all.
+        [Route("availability/{carId}")]
+        public JsonResult GetUnavailableDatesForVehicle(int carId)
+        {
+            try
+            {
+                var unavailableDates = _service.GetUnavailableDatesForVehicle(carId);
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    unavailableDates = unavailableDates,
+                    message = "Success",
+                    statusCode = StatusCodes.Status200OK
+                });
+            }
+            catch
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "Something went wrong! Try again later.",
+                    statusCode = StatusCodes.Status500InternalServerError
+                });
+            }
+
+
+        }
     }
 }

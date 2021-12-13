@@ -30,7 +30,10 @@ export class CreateRideshare extends Component {
             endLoc: null,
             startDate: startDate,
             endDate: startDate,
-            errorMessage: null
+            errorMessage: null,
+            excludedDatesDict: null,
+            excludedDates: [],
+
         };
     }
 
@@ -51,9 +54,12 @@ export class CreateRideshare extends Component {
 
     handleCarChange = (event) => {
         var selectedCar = this.state.cars.find(x => x.name === event.target.value)
-        this.setState({
-            selectedCar: selectedCar
-        });
+        if (selectedCar) {
+            this.getUnavailableDatesForVehicle(selectedCar.carId);
+            this.setState({
+                selectedCar: selectedCar
+            });
+        }
     }
 
     handleEmployeeChange = (event) => {
@@ -68,6 +74,16 @@ export class CreateRideshare extends Component {
     handleSubmit = (event) => {
         event.preventDefault();
         this.postNewRideshare();
+    }
+
+    handleDateSelection = (event) => {        
+        var todayKey = moment(event).format("MM/DD/yyyy");
+        console.log(todayKey)
+        var excludedDates = this.state.excludedDatesDict[todayKey] ? this.state.excludedDatesDict[todayKey].map(x => new Date(x)) : []
+        this.setState({
+            excludedDates: excludedDates
+        });
+        
     }
 
     render() {
@@ -126,6 +142,7 @@ export class CreateRideshare extends Component {
         }
 
         return (
+            
             <div id="create-rideshare-container" className="container">
                 {   this.state.errorMessage && 
                     <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -184,13 +201,15 @@ export class CreateRideshare extends Component {
                                         className="form-control"
                                         showTime={{ use12hours: false }}
                                         selected={this.state.startDate}
-                                        onChange={(date) => this.setState({startDate: date})}
+                                        onChange={(date) => this.setState({ startDate: date })}
                                         showTimeSelect
                                         minDate={new Date()}
                                         minTime={new Date(new Date().setHours(currentHour, currentMins, 0, 0))}
                                         maxTime={new Date(new Date().setHours(23, 59, 0, 0))}
+                                        excludeTimes={this.state.excludedDates}
                                         dateFormat="Pp"
                                         timeFormat="HH:mm"
+                                        onSelect={this.handleDateSelection}
                                     />
                                 </div>
                             </div>              
@@ -215,6 +234,7 @@ export class CreateRideshare extends Component {
                                         minDate={this.state.startDate}
                                         minTime={new Date(new Date().setHours(currentHour, currentMins, 0, 0))}
                                         maxTime={new Date(new Date().setHours(23, 59, 0, 0))}
+                                        excludeTimes={this.state.excludedDates}
                                         dateFormat="Pp"
                                         timeFormat="HH:mm"
                                     />
@@ -240,8 +260,8 @@ export class CreateRideshare extends Component {
                                         </tr>
                                         <tr>
                                             <td>{this.state.startLoc} &#10132; {this.state.endLoc}</td>
-                                            <td>{ moment(this.state.startDate).format('DD-MM-YYYY HH:mm')}</td>
-                                            <td>{ moment(this.state.endDate).format('DD-MM-YYYY HH:mm')}</td>
+                                            <td>{ moment(this.state.startDate).format('DD/MM/YYYY HH:mm')}</td>
+                                            <td>{ moment(this.state.endDate).format('DD/MM/YYYY HH:mm')}</td>
                                         </tr>
                                     </thead>
                                 </table>
@@ -332,7 +352,20 @@ export class CreateRideshare extends Component {
         const data = await response.json();
         this.setState({ employees: data });
     }
-
+    async getUnavailableDatesForVehicle(carId) {
+        const response = await fetch('api/rideshares/availability/' + carId);
+        const data = await response.json();
+        
+        if (data.success === true) {
+            var todayKey = moment(new Date()).format("MM/DD/yyyy");
+            var excludedDates = data.unavailableDates[todayKey] ? data.unavailableDates[todayKey].map(x => new Date(x)) : []
+            this.setState({
+                excludedDatesDict: data.unavailableDates,
+                excludedDates: excludedDates
+            });
+        }
+        
+    }
     async postNewRideshare() {
         var model = {
             "StartLocation": this.state.startLoc,
@@ -353,7 +386,6 @@ export class CreateRideshare extends Component {
         if (data.success === true) {
             window.location = "/";
         } else if (data.success === false) {
-            console.log(data)
             // handle response from backend
             this.setState({
                 errorMessage: data.message

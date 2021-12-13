@@ -117,6 +117,50 @@ namespace CarpoolManagement.Services
             }
         }
 
+        public Dictionary<string, List<DateTime>> GetUnavailableDatesForVehicle(int carId)
+        {
+            try
+            {
+                Dictionary<string, List<DateTime>> res = new Dictionary<string, List<DateTime>>();
+
+                var rideShares = _context.RideShares
+                                   .Where(r => r.CarId == carId).ToList();                
+
+                // Return empty list, there are no rideshares yet.
+                if (rideShares.Count == 0) return res;
+
+                foreach (var rs in rideShares)
+                {
+                    var timeRange = CreateTimeRange(rs.StartDate, rs.EndDate);
+                    if (!res.ContainsKey(rs.StartDate.Date.ToShortDateString()))
+                    {
+                        res.Add(rs.StartDate.Date.ToShortDateString(), timeRange);
+                    } else
+                    {
+                        res[rs.StartDate.Date.ToShortDateString()].AddRange(timeRange);
+                    }
+                }
+
+                return res;
+            }
+            catch (Exception e)
+            {
+                throw;
+            }
+        }
+
+        private List<DateTime> CreateTimeRange(DateTime startDate, DateTime endDate)
+        {
+            List<DateTime> dateList = new List<DateTime>();
+            while (startDate.AddMinutes(30) <= endDate)
+            {
+                dateList.Add(startDate);
+                startDate = startDate.AddMinutes(30);
+                
+            }
+            return dateList;
+        }
+
         /** Helper method to check if vehicle is available for given time range **/
         private bool CheckIfCarIsAvailable(int carId, DateTime start, DateTime end, int? rideShareId=null)
         {
@@ -162,7 +206,7 @@ namespace CarpoolManagement.Services
             if (!rideShare.Employees.Any(e => e.IsDriver == true)) throw new ValidationException("At least one passenger must be a driver.");
 
             // Check if dates are the same
-            if (rideShare.StartDate == rideShare.EndDate) throw new ValidationException("Start and end times can't be the same.");
+            if (rideShare.StartDate >= rideShare.EndDate) throw new ValidationException("End date must be after start date.");
 
             // Check if car is available
             if (!CheckIfCarIsAvailable(car.CarId, rideShare.StartDate, rideShare.EndDate, rideShare.RideShareId))
