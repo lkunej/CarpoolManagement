@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CarpoolManagment.Controllers
+namespace CarpoolManagement.Controllers
 {
     [ApiController]
     [Route("[controller]")]

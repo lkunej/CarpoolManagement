@@ -1,4 +1,4 @@
-﻿using CarpoolManagment.Models;
+﻿using CarpoolManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CarpoolManagment.DAL
+namespace CarpoolManagement.DAL
 {
     public class DbInitializer : IDbInitializer
     {
@@ -46,6 +46,18 @@ namespace CarpoolManagment.DAL
                             context.Employees.AddRange(emps);
                         }
                     }
+
+                    // Add Cities                  
+                    if (!context.Cities.Any())
+                    {
+                        using (StreamReader r = new StreamReader("DAL/DBFixtures/hr_cities.json"))
+                        {
+                            string json = r.ReadToEnd();
+                            List<City> cities = JsonConvert.DeserializeObject<List<City>>(json);
+                            context.Cities.AddRange(cities);
+                        }
+                    }
+
                     context.SaveChanges();
                 }
             }

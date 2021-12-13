@@ -1,5 +1,6 @@
-﻿using CarpoolManagment.DAL;
-using CarpoolManagment.Models;
+﻿using CarpoolManagement.DAL;
+using CarpoolManagement.Models;
+using CarpoolManagement.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CarpoolManagment.Services
+namespace CarpoolManagement.Services
 {
     public class RideSharesService
     {
@@ -19,12 +20,16 @@ namespace CarpoolManagment.Services
         }
 
         /** Method to return a list of RideShare objects **/
-        public async Task<List<RideShare>> GetRideShares()
+        public async Task<List<RideShareViewModel>> GetRideShares()
         {
             try
             {
-                List<RideShare> res = new List<RideShare>();
-                res = await _context.RideShares.ToListAsync();
+                List<RideShareViewModel> res = new List<RideShareViewModel>();
+                var rideShares = await _context.RideShares.Include(c => c.Car).Include(e => e.Employees).ToListAsync();
+                foreach(var rs in rideShares)
+                {
+                    res.Add(new RideShareViewModel(rs));
+                }
                 return res;
             }
             catch (Exception e)
@@ -59,14 +64,17 @@ namespace CarpoolManagment.Services
                 // Check if it's possible to create rideShare with wanted input
                 await CheckRidesharePrerequisite(rideShare);
 
+                foreach(var emp in rideShare.Employees)
+                {
+                    _context.Entry(emp).State = EntityState.Modified;
+                }
+
                 _context.RideShares.Add(rideShare);
                 await _context.SaveChangesAsync();
             }
             catch (Exception e)
             {
-                // The below error is a bug in the InMemoryDatabase used for this project.
-                // If this error is thrown, the row is still inserted into the DB.
-                if(e.Message != "An item with the same key has already been added. Key: 1") throw;
+                throw;
             }
         }
 
@@ -153,10 +161,13 @@ namespace CarpoolManagment.Services
             // Check if at least one employee has a license
             if (!rideShare.Employees.Any(e => e.IsDriver == true)) throw new ValidationException("At least one passenger must be a driver.");
 
+            // Check if dates are the same
+            if (rideShare.StartDate == rideShare.EndDate) throw new ValidationException("Start and end times can't be the same.");
+
             // Check if car is available
             if (!CheckIfCarIsAvailable(car.CarId, rideShare.StartDate, rideShare.EndDate, rideShare.RideShareId))
             {
-                throw new ValidationException(string.Format("Car with id={0} isn't available for chosen dates.", rideShare.CarId));
+                throw new ValidationException(string.Format("Car '{0}' isn't available for chosen dates.", car.Name));
             }
         }
         

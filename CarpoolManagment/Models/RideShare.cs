@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace CarpoolManagment.Models
+namespace CarpoolManagement.Models
 {
     public class RideShare
     {
+        [Key]
         public int RideShareId { get; set; }
         [Required]
         public string StartLocation { get; set; }
@@ -16,8 +18,11 @@ namespace CarpoolManagment.Models
         [Required]
         public DateTime EndDate { get; set; }
         [Required]
+        [ForeignKey("Car")]
         public int CarId { get; set; }
+        public Car Car { get; set; }
         [Required]
-        public List<Employee> Employees { get; set; }
+        public ICollection<Employee> Employees { get; set; }
+        //public List<Employee> Employees { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 using System;
 
-namespace CarpoolManagment
+namespace CarpoolManagement
 {
     public class WeatherForecast
     {

@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CarpoolManagment.DAL;
-using CarpoolManagment.Models;
+using CarpoolManagement.DAL;
+using CarpoolManagement.Models;
 
-namespace CarpoolManagment.Controllers
+namespace CarpoolManagement.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using CarpoolManagment.DAL;
-using CarpoolManagment.Models;
-using CarpoolManagment.Services;
-using Newtonsoft.Json;
+using CarpoolManagement.DAL;
+using CarpoolManagement.Models;
+using CarpoolManagement.Services;
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
-namespace CarpoolManagment.Controllers
+namespace CarpoolManagement.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -108,6 +104,15 @@ namespace CarpoolManagment.Controllers
                     success = true,
                     message = "Success",
                     statusCode = StatusCodes.Status200OK
+                });
+            }
+            catch (ValidationException ve)
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = ve.Message,
+                    statusCode = StatusCodes.Status400BadRequest
                 });
             }
             catch (Exception e)

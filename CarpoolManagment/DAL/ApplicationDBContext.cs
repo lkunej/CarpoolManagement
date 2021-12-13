@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using CarpoolManagment.Models;
+using CarpoolManagement.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Newtonsoft.Json;
 
-namespace CarpoolManagment.DAL
+namespace CarpoolManagement.DAL
 {
     public class ApplicationDBContext : DbContext
     {        
@@ -22,10 +22,15 @@ namespace CarpoolManagment.DAL
             modelBuilder.Entity<Car>()
                 .HasIndex(c => c.Plates)
                 .IsUnique();
+
+            modelBuilder.Entity<RideShare>()
+                .HasMany(rs => rs.Employees)
+                .WithMany(e => e.RideShares);
         }
 
         public DbSet<Car> Cars { get; set; }
         public DbSet<Employee> Employees { get; set; }
         public DbSet<RideShare> RideShares { get; set; }
+        public DbSet<City> Cities { get; set; }
     }
 }

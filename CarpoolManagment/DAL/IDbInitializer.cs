@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CarpoolManagment.DAL
+namespace CarpoolManagement.DAL
 {
     public interface IDbInitializer
     {
