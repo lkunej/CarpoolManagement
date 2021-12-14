@@ -190,7 +190,7 @@ namespace CarpoolManagement.Controllers
                 return new JsonResult(new
                 {
                     success = true,
-                    message = string.Format("Deleted ride share with id={0}",id),
+                    message = "Successfully deleted ride share",
                     statusCode = StatusCodes.Status200OK
                 });
             }
@@ -204,7 +204,6 @@ namespace CarpoolManagement.Controllers
                 });
             }
         }
-
 
         // This method should be replaced to CarsController, not sure if I'll have time to seperate service and controller for all.
         [Route("availability/{carId}")]

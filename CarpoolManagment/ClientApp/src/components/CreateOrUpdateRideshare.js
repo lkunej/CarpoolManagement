@@ -5,8 +5,8 @@ import moment from 'moment'
 
 import "react-datepicker/dist/react-datepicker.css";
 
-export class CreateRideshare extends Component {
-    static displayName = CreateRideshare.name;
+export class CreateOrUpdateRideshare extends Component {
+    static displayName = CreateOrUpdateRideshare.name;
     constructor(props) {
         super(props);
         var startDate = new Date();
@@ -25,31 +25,54 @@ export class CreateRideshare extends Component {
             cars: [],
             selectedCar: null,
             employees: [],
+            employeesValues: [],
             selectedEmployees: [],
             startLoc: null,
             endLoc: null,
             startDate: startDate,
             endDate: startDate,
             errorMessage: null,
-            excludedDatesDict: null,
+            excludedDatesDict: {},
             excludedDates: [],
-
+            rideshareToEditId: this.props.match.params.id || null,
+            rideShareToEdit: null
         };
     }
 
-    componentDidMount() {
-        this.populateCitiesData()
-        this.populateCarsData()
-        this.populateEmployeesData()
+    async componentDidMount() {
+        await this.populateCitiesData()
+        await this.populateCarsData()
+        await this.populateEmployeesData()
+        if (this.state.rideshareToEditId) {
+            this.prepopulateFields();
+        }
     }
 
-    handleLocationChange = (event) => {
-        var city = event.target.value === "Choose..." ? "" : event.target.value;
-        if (event.target.id === "start-location") {
-            this.setState({ startLoc: city })
-        } else {
-            this.setState({ endLoc: city })
-        }
+    async prepopulateFields() {
+        await this.getRideShareToEdit(this.state.rideshareToEditId);
+        const defaultEmployees = this.createDefaultEmployeeValues(this.state.rideShareToEdit.employees);
+        var startLoc = (this.state.cities.find(x => x.name === this.state.rideShareToEdit.startLocation))
+        var endLoc = (this.state.cities.find(x => x.name === this.state.rideShareToEdit.endLocation))
+        var selectedCar = this.state.rideShareToEdit.car
+        this.setState({
+            selectedCar: selectedCar,
+            selectedEmployees: this.state.rideShareToEdit.employees,
+            employeesValues: defaultEmployees,
+            startLoc: { value: startLoc.cityId, label: startLoc.name },
+            endLoc: { value: endLoc.cityId, label: endLoc.name },
+            startDate: new Date(this.state.rideShareToEdit.startDate),
+            endDate: new Date(this.state.rideShareToEdit.endDate),
+        })
+        this.getUnavailableDatesForVehicle(selectedCar.carId);
+    }
+
+    createDefaultEmployeeValues(defaultEmployees) {
+        return defaultEmployees.map((item, idx) => {
+            return (
+                { value: item, label: item.name }
+            );
+        });
+        
     }
 
     handleCarChange = (event) => {
@@ -63,38 +86,42 @@ export class CreateRideshare extends Component {
     }
 
     handleEmployeeChange = (event) => {
-        var selectedEmployees = event.map(item => {
+        const labels = event.map(o => o.label)
+        const filtered = event.filter(({ label }, index) => !labels.includes(label, index + 1))
+        var selectedEmployees = filtered.map(item => {
             return item.value
         })
         this.setState({
-            selectedEmployees: selectedEmployees
+            selectedEmployees: selectedEmployees,
+            employeesValues: filtered
         });
     }
 
     handleSubmit = (event) => {
         event.preventDefault();
-        this.postNewRideshare();
+        if (!this.state.rideshareToEditId) {
+            this.postNewRideshare();
+        } else {
+            this.putUpdatedRideshare(this.state.rideshareToEditId);
+        }
+        
     }
 
     handleDateSelection = (event) => {        
         var todayKey = moment(event).format("MM/DD/yyyy");
-        console.log(todayKey)
         var excludedDates = this.state.excludedDatesDict[todayKey] ? this.state.excludedDatesDict[todayKey].map(x => new Date(x)) : []
         this.setState({
             excludedDates: excludedDates
         });
         
     }
-
+    
     render() {
-
         var renderedCities = [];
         if (this.state.cities.length > 0) {
             renderedCities = this.state.cities.map((item, idx) => {
                 return (
-                    <option key={item.cityId}>
-                        {item.name}
-                    </option>
+                    { value: item.cityId, label: item.name }
                 );
             });
         }
@@ -102,11 +129,27 @@ export class CreateRideshare extends Component {
         var renderedCars = [];
         if (this.state.cars.length > 0) {
             renderedCars = this.state.cars.map((item, idx) => {
-                return (
-                    <option key={item.carId}>
-                        {item.name}
-                    </option>
-                );
+                if (this.state.selectedCar) {
+                    if (this.state.selectedCar.name === item.name) {
+                        return (
+                            <option selected key={item.carId}>
+                                {item.name}
+                            </option>
+                        );
+                    } else {
+                        return (
+                            <option key={item.carId}>
+                                {item.name}
+                            </option>
+                        );
+                    }
+                } else {
+                    return (
+                        <option key={item.carId}>
+                            {item.name}
+                        </option>
+                    );
+                }                          
             });
         }
 
@@ -131,6 +174,14 @@ export class CreateRideshare extends Component {
             });
         }
 
+        var renderedButton = this.state.rideshareToEditId ?
+            <button type="submit" className="btn btn-primary float-right">Update</button>
+            :
+            <button type="submit" className="btn btn-primary float-right">Create</button>
+
+        var startLocationLabel = this.state.startLoc ? this.state.startLoc.label : ""
+        var endLocationLabel = this.state.endLoc ? this.state.endLoc.label : ""
+
         const isSelectedDateInFuture = +this.state.startDate > +new Date();
 
         const date = new Date();
@@ -141,8 +192,7 @@ export class CreateRideshare extends Component {
             currentMins = 0;
         }
 
-        return (
-            
+        return (                
             <div id="create-rideshare-container" className="container">
                 {   this.state.errorMessage && 
                     <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -159,7 +209,7 @@ export class CreateRideshare extends Component {
                         <div className="form-row">
                             <div className="form-group w-100">
                                 <label htmlFor="car-dropdown" className="d-block">Choose Vehicle:</label>
-                                <select id="car-choice" className="d-block form-select" onChange={this.handleCarChange}>
+                                <select id="car-choice" className="d-block form-select" onChange = { this.handleCarChange } >
                                     <option>Choose...</option>
                                     {renderedCars}
                                 </select>
@@ -181,6 +231,8 @@ export class CreateRideshare extends Component {
                                     options={renderedEmployees}
                                     className="basic-multi-select d-block"
                                     classNamePrefix="select"
+                                    value={this.state.employeesValues}
+                                    
                                 />
                             </div>
                         </div>
@@ -189,10 +241,14 @@ export class CreateRideshare extends Component {
                             <div className="form-row">
                                 <div className="col-md-6">
                                     <label htmlFor="start-location" className="d-block">Start Location:</label>
-                                    <select id="start-location" className="d-block form-select" onChange={this.handleLocationChange}>
-                                        <option>Choose...</option>
-                                        {renderedCities}
-                                    </select>
+                                    <Select
+                                        onChange={(city) => { this.setState({ startLoc: city })}}
+                                        name="start-locations"
+                                        options={renderedCities}
+                                        className="basic-multi-select d-block"
+                                        classNamePrefix="select"
+                                        value={this.state.startLoc}
+                                    />
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="start-date" className="d-block">Start Date:</label>
@@ -216,10 +272,14 @@ export class CreateRideshare extends Component {
                             <div className="form-row mt-3 mb-3">
                                 <div className="col-md-6">
                                     <label htmlFor="end-location" className="d-block">End Location:</label>
-                                    <select id="end-location" className="d-block form-select" onChange={this.handleLocationChange}>
-                                        <option>Choose...</option>
-                                        {renderedCities}
-                                    </select>
+                                    <Select
+                                        onChange={(city) => { this.setState({ endLoc: city }) }}
+                                        name="end-locations"
+                                        options={renderedCities}
+                                        className="basic-multi-select d-block"
+                                        classNamePrefix="select"
+                                        value={this.state.endLoc}
+                                    />
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="end-date" className="d-block">End Date:</label>
@@ -242,7 +302,7 @@ export class CreateRideshare extends Component {
                             </div>                            
                         </div>
                         <hr />
-                        <button type="submit" className="btn btn-primary float-right">Create</button>
+                        {renderedButton}
                     </form>
                 </div>
                 <div className="row mt-1 mb-1">
@@ -259,7 +319,7 @@ export class CreateRideshare extends Component {
                                             <th scope="col">End Date (DD/MM/YYYY)</th>
                                         </tr>
                                         <tr>
-                                            <td>{this.state.startLoc} &#10132; {this.state.endLoc}</td>
+                                            <td>{startLocationLabel} &#10132; {endLocationLabel}</td>
                                             <td>{ moment(this.state.startDate).format('DD/MM/YYYY HH:mm')}</td>
                                             <td>{ moment(this.state.endDate).format('DD/MM/YYYY HH:mm')}</td>
                                         </tr>
@@ -366,10 +426,10 @@ export class CreateRideshare extends Component {
         }
         
     }
-    async postNewRideshare() {
+    async postNewRideshare() {        
         var model = {
-            "StartLocation": this.state.startLoc,
-            "EndLocation": this.state.endLoc,
+            "StartLocation": this.state.startLoc.label,
+            "EndLocation": this.state.endLoc.label,
             "StartDate": this.state.startDate,
             "EndDate": this.state.endDate,
             "CarId": this.state.selectedCar ? this.state.selectedCar.carId : null,
@@ -397,8 +457,51 @@ export class CreateRideshare extends Component {
                     errorMessage: "Please check form data and try again."
                 });
             }
+        }        
+    }
+    async putUpdatedRideshare(id) {
+        var model = {
+            "RideShareId": id,
+            "StartLocation": this.state.startLoc.label,
+            "EndLocation": this.state.endLoc.label,
+            "StartDate": this.state.startDate,
+            "EndDate": this.state.endDate,
+            "CarId": this.state.selectedCar ? this.state.selectedCar.carId : null,
+            "Employees": this.state.selectedEmployees
+        }
+        const requestOptions = {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(model)
+        };
+        const response = await fetch('api/rideshares/'+id, requestOptions);
+        const data = await response.json();
+        // handle response from backend
+        if (data.success === true) {
+            window.location = "/";
+        } else if (data.success === false) {
+            // handle response from backend
+            this.setState({
+                errorMessage: data.message
+            });
+        } else {
+            // handle frontend validation errors
+            if (data.title) {
+                this.setState({
+                    errorMessage: "Please check form data and try again."
+                });
+            }
+        }
+    }    
+    async getRideShareToEdit(rideshareId) {
+        const response = await fetch('api/rideshares/' + rideshareId);
+        const data = await response.json();
+
+        if (data.success === true) {
+            this.setState({
+                rideShareToEdit: data.rideShare
+            });
         }
 
-        
     }
 }

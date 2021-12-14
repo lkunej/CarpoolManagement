@@ -25,7 +25,10 @@ namespace CarpoolManagement.Services
             try
             {
                 List<RideShareViewModel> res = new List<RideShareViewModel>();
-                var rideShares = await _context.RideShares.Include(c => c.Car).Include(e => e.Employees).ToListAsync();
+                var rideShares = await _context.RideShares.Include(c => c.Car)
+                                                          .Include(e => e.Employees)
+                                                          .OrderByDescending(rs => rs.StartDate)
+                                                          .ToListAsync();
                 foreach(var rs in rideShares)
                 {
                     res.Add(new RideShareViewModel(rs));
@@ -38,11 +41,12 @@ namespace CarpoolManagement.Services
             }
         }
         /** Method to return a single RideShare object by id **/
-        public async Task<RideShare> GetRideShareById(int id)
+        public async Task<RideShareViewModel> GetRideShareById(int id)
         {
             try
             {
-                var res = await _context.RideShares.FindAsync(id);
+                var rideShare = await _context.RideShares.Include(c => c.Car).Include(e => e.Employees).FirstOrDefaultAsync(i => i.RideShareId == id);
+                RideShareViewModel res = new RideShareViewModel(rideShare);
                 return res;
             }
             catch (Exception e)

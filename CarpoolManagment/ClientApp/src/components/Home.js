@@ -15,6 +15,32 @@ export class Home extends Component {
         this.populateRideShareData();
     }
 
+    handleDeleteButtonClick = (event) => {
+        event.preventDefault();
+        if (window.confirm("Are you sure you want to delete?") === true) {
+            this.deleteRideShare(event.target.dataset.id)
+        }        
+    }
+
+    handleEditButtonClick = (event) => {
+        event.preventDefault();
+        if (window.confirm("Are you sure you want to delete?") === true) {
+            this.editRideShare(event.target.dataset.id)
+        }
+    }
+
+    removeRideshareFromList = (id) => {
+        console.log(this.state.rideShares)
+        var rideShares = this.state.rideShares;
+        var toRemoveIndex = rideShares.findIndex(x => x.rideShareId == id);
+        if (toRemoveIndex > -1) {
+            rideShares.splice(toRemoveIndex, 1);
+        }
+        this.setState({
+            rideShares: rideShares
+        });
+    }
+
     render() {
 
         var renderedItems = [];
@@ -44,6 +70,12 @@ export class Home extends Component {
                             <ul className="list-unstyled">
                                 {renderedEmployees}
                             </ul>
+                        </td>
+                        <td className="align-middle">
+                            <Link to={"/edit/" + item.rideShareId}>
+                                <button type="button w-100" className="btn btn-outline-primary btn-block">Edit</button>
+                            </Link>
+                            <button type="button w-100" className="btn btn-outline-danger btn-block" data-id={item.rideShareId} onClick={this.handleDeleteButtonClick} >Delete</button>
                         </td>
                     </tr>
                 );
@@ -83,8 +115,21 @@ export class Home extends Component {
         if (data.success) {
             this.setState({ rideShares: data.rideShares });
         } else {
-            alert(data.message)
+            alert(data.message);
+        }        
+    }
+    async deleteRideShare(id) {
+        const requestOptions = {
+            method: 'DELETE'
+        };
+        const response = await fetch('api/rideshares/'+id, requestOptions);
+        const data = await response.json();
+        if (data.success) {
+            alert(data.message);
+            this.removeRideshareFromList(id);
+            //window.location.reload()
+        } else {
+            alert(data.message);
         }
-        
     }
 }
