@@ -34,6 +34,8 @@ export class CreateOrUpdateRideshare extends Component {
             errorMessage: null,
             excludedDatesDict: {},
             excludedDates: [],
+            minTime: new Date(new Date().setHours(startDate.getHours(), startDate.getMinutes(), 0, 0)),
+            maxTime: new Date(new Date().setHours(23, 59, 0, 0)),
             rideshareToEditId: this.props.match.params.id || null,
             rideShareToEdit: null
         };
@@ -109,11 +111,25 @@ export class CreateOrUpdateRideshare extends Component {
 
     handleDateSelection = (event) => {        
         var todayKey = moment(event).format("MM/DD/yyyy");
-        var excludedDates = this.state.excludedDatesDict[todayKey] ? this.state.excludedDatesDict[todayKey].map(x => new Date(x)) : []
-        this.setState({
-            excludedDates: excludedDates
-        });
+        var excludedDates = this.state.excludedDatesDict[todayKey] ? this.state.excludedDatesDict[todayKey].map(x => new Date(x)) : [];
+
+        const date = new Date();
+        const isSelectedDateInFuture = event.toDateString() != date.toDateString();
         
+        var currentMins = date.getMinutes();
+        var currentHours = date.getHours();
+        var minTime = new Date().setHours(currentHours, currentMins, 0, 0);
+        var maxTime = new Date(new Date().setHours(23, 59, 0, 0));
+        if (isSelectedDateInFuture) {
+            minTime = null;
+            maxTime = null;
+        }
+
+        this.setState({
+            excludedDates: excludedDates,
+            minTime: minTime,
+            maxTime: maxTime
+        });
     }
     
     render() {
@@ -182,15 +198,6 @@ export class CreateOrUpdateRideshare extends Component {
         var startLocationLabel = this.state.startLoc ? this.state.startLoc.label : ""
         var endLocationLabel = this.state.endLoc ? this.state.endLoc.label : ""
 
-        const isSelectedDateInFuture = +this.state.startDate > +new Date();
-
-        const date = new Date();
-        let currentMins = date.getMinutes();
-        let currentHour = date.getHours();
-        if (isSelectedDateInFuture) {
-            currentHour = 0;
-            currentMins = 0;
-        }
 
         return (                
             <div id="create-rideshare-container" className="container">
@@ -260,8 +267,8 @@ export class CreateOrUpdateRideshare extends Component {
                                         onChange={(date) => this.setState({ startDate: date })}
                                         showTimeSelect
                                         minDate={new Date()}
-                                        minTime={new Date(new Date().setHours(currentHour, currentMins, 0, 0))}
-                                        maxTime={new Date(new Date().setHours(23, 59, 0, 0))}
+                                        minTime={this.state.minTime}
+                                        maxTime={this.state.maxTime}
                                         excludeTimes={this.state.excludedDates}
                                         dateFormat="Pp"
                                         timeFormat="HH:mm"
@@ -292,8 +299,8 @@ export class CreateOrUpdateRideshare extends Component {
                                         onChange={(date) => this.setState({ endDate: date })}
                                         showTimeSelect
                                         minDate={this.state.startDate}
-                                        minTime={new Date(new Date().setHours(currentHour, currentMins, 0, 0))}
-                                        maxTime={new Date(new Date().setHours(23, 59, 0, 0))}
+                                        minTime={this.state.minTime}
+                                        maxTime={this.state.maxTime}
                                         excludeTimes={this.state.excludedDates}
                                         dateFormat="Pp"
                                         timeFormat="HH:mm"
@@ -428,8 +435,8 @@ export class CreateOrUpdateRideshare extends Component {
     }
     async postNewRideshare() {        
         var model = {
-            "StartLocation": this.state.startLoc.label,
-            "EndLocation": this.state.endLoc.label,
+            "StartLocation": this.state.startLoc ? this.state.startLoc.label : null,
+            "EndLocation": this.state.endLoc ? this.state.endLoc.label : null,
             "StartDate": this.state.startDate,
             "EndDate": this.state.endDate,
             "CarId": this.state.selectedCar ? this.state.selectedCar.carId : null,

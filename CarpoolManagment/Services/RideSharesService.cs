@@ -135,15 +135,33 @@ namespace CarpoolManagement.Services
 
                 foreach (var rs in rideShares)
                 {
+                    var tmpDate = rs.StartDate;
+
+                    if (tmpDate.Hour == 23) tmpDate = tmpDate.AddDays(1);
+                    var key = tmpDate.Date.ToShortDateString();
                     var timeRange = CreateTimeRange(rs.StartDate, rs.EndDate);
-                    if (!res.ContainsKey(rs.StartDate.Date.ToShortDateString()))
+                    if (!res.ContainsKey(key))
                     {
-                        res.Add(rs.StartDate.Date.ToShortDateString(), timeRange);
+                        res.Add(key, timeRange);
                     } else
                     {
-                        res[rs.StartDate.Date.ToShortDateString()].AddRange(timeRange);
+                        res[key].AddRange(timeRange);
                     }
                 }
+
+                foreach (KeyValuePair<string, List<DateTime>> entry in res)
+                {
+                    entry.Value.Sort((x, y) => x.CompareTo(y));
+                    List<DateTime> singleDatesToAdd = new List<DateTime>();
+                    for (int i=0; i<entry.Value.Count-2; i++)
+                    {
+                        if (entry.Value[i+1].Subtract(entry.Value[i]).TotalMinutes == 60)
+                        {
+                            singleDatesToAdd.Add(entry.Value[i].AddMinutes(30));
+                        }
+                    }
+                    res[entry.Key].AddRange(singleDatesToAdd);
+                }               
 
                 return res;
             }

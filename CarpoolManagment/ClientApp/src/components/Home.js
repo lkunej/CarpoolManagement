@@ -30,7 +30,6 @@ export class Home extends Component {
     }
 
     removeRideshareFromList = (id) => {
-        console.log(this.state.rideShares)
         var rideShares = this.state.rideShares;
         var toRemoveIndex = rideShares.findIndex(x => x.rideShareId == id);
         if (toRemoveIndex > -1) {
