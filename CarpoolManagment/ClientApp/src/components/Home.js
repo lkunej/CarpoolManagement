@@ -22,13 +22,6 @@ export class Home extends Component {
         }        
     }
 
-    handleEditButtonClick = (event) => {
-        event.preventDefault();
-        if (window.confirm("Are you sure you want to delete?") === true) {
-            this.editRideShare(event.target.dataset.id)
-        }
-    }
-
     removeRideshareFromList = (id) => {
         var rideShares = this.state.rideShares;
         var toRemoveIndex = rideShares.findIndex(x => x.rideShareId == id);

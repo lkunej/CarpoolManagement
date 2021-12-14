@@ -230,8 +230,32 @@ namespace CarpoolManagement.Controllers
                     statusCode = StatusCodes.Status500InternalServerError
                 });
             }
+        }
 
+        [Route("getRidesharesGroupedByMonth")]
+        public async Task<JsonResult> GetRidesharesForMonth()
+        {
+            try
+            {
+                var rideShares = await _service.GetRidesharesGroupedByMonth();
 
+                return new JsonResult(new
+                {
+                    success = true,
+                    rideShares = rideShares,
+                    message = "Success",
+                    statusCode = StatusCodes.Status200OK
+                });
+            }
+            catch
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "Something went wrong! Try again later.",
+                    statusCode = StatusCodes.Status500InternalServerError
+                });
+            }
         }
     }
 }

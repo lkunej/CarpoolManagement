@@ -209,6 +209,36 @@ namespace CarpoolManagement.Services
 
         }
 
+        /** Method to return a list of RideShare objects **/
+        public async Task<RideSharesByMonthViewModel> GetRidesharesGroupedByMonth()
+        {
+            try
+            {
+                RideSharesByMonthViewModel res = new RideSharesByMonthViewModel();
+                var rideShares = _context.RideShares.Include(c => c.Car)
+                                                    .Include(e => e.Employees)
+                                                    .ToLookup(g => new { g.StartDate.Year, g.StartDate.Month });
+
+                foreach (var group in rideShares)
+                {
+                    var month = group.Key.Month.ToString();
+                    if (month.Length == 1) month = '0' + month;
+                    
+                    var key = string.Format("{0}/{1}", month, group.Key.Year);
+                    res.RideShares[key] = new List<RideShareViewModel>();
+                    foreach(var rideShare in group)
+                    {
+                        res.RideShares[key].Add(new RideShareViewModel(rideShare));
+                    }
+                }
+                return res;
+            }
+            catch (Exception e)
+            {
+                throw;
+            }
+        }
+
         /** Helper method to preform logical checks needed before creating/updating a RideShare object 
          * 
          *  Checks if number of wanted employees is more than the vehicles capacity
