@@ -64,6 +64,7 @@ export class CreateOrUpdateRideshare extends Component {
         });
     }
 
+    /** Function to prepopulate input fields if the page is opened for editing a rideshare */
     async prepopulateFields() {
         const response = await getRideShareToEdit(this.state.rideshareToEditId);
         if (response.success === true) {
@@ -87,6 +88,7 @@ export class CreateOrUpdateRideshare extends Component {
         await this.setExcludedDates(await getUnavailableDatesForVehicle(selectedCar.carId));
     }
 
+    /** Helper function to create options for employees dropdown **/
     createDefaultEmployeeValues(defaultEmployees) {
         return defaultEmployees.map((item, idx) => {
             return (
@@ -96,6 +98,19 @@ export class CreateOrUpdateRideshare extends Component {
         
     }
 
+    /** Helper function to find excluded dates for t**/
+    async setExcludedDates(response) {
+        if (response.success === true) {
+            var key = moment(this.state.startDate).format("MM/DD/yyyy");
+            var excludedDates = response.unavailableDates[key] ? response.unavailableDates[key].map(x => new Date(x)) : []
+            this.setState({
+                excludedDatesDict: response.unavailableDates,
+                excludedDates: excludedDates
+            });
+        }
+    }
+
+    /******** Handlers for when inputs are changed or form is submitted ********/
     handleCarChange = async(event) => {
         var selectedCar = this.state.cars.find(x => x.name === event.target.value)
         if (selectedCar) {
@@ -105,7 +120,6 @@ export class CreateOrUpdateRideshare extends Component {
             });
         }
     }
-
     handleEmployeeChange = (event) => {
         var labels = event.map(o => o.label)
         const filtered = event.filter(({ label }, index) => !labels.includes(label, index + 1))
@@ -120,7 +134,6 @@ export class CreateOrUpdateRideshare extends Component {
         // Need to rethink logic for combining unavailable employee/vehicle dates.
         //this.getUnavailableDatesForEmployees(selectedEmployees);
     }
-
     handleSubmit = async(event) => {
         event.preventDefault();
         var model = {
@@ -138,7 +151,28 @@ export class CreateOrUpdateRideshare extends Component {
             this.handleSubmitResponse(await putUpdatedRideshare(this.state.rideshareToEditId, model));
         }   
     }
+    handleDateSelection = (event) => {
+        var todayKey = moment(event).format("MM/DD/yyyy");
+        var excludedDates = this.state.excludedDatesDict[todayKey] ? this.state.excludedDatesDict[todayKey].map(x => new Date(x)) : [];
 
+        const date = new Date();
+        const isSelectedDateInFuture = event.toDateString() != date.toDateString();
+
+        var currentMins = date.getMinutes();
+        var currentHours = date.getHours();
+        var minTime = new Date().setHours(currentHours, currentMins, 0, 0);
+        var maxTime = new Date(new Date().setHours(23, 59, 0, 0));
+        if (isSelectedDateInFuture) {
+            minTime = null;
+            maxTime = null;
+        }
+
+        this.setState({
+            excludedDates: excludedDates,
+            minTime: minTime,
+            maxTime: maxTime
+        });
+    }
     handleSubmitResponse(response) {
         // handle response from backend
         if (response.success === true) {
@@ -155,40 +189,6 @@ export class CreateOrUpdateRideshare extends Component {
                     errorMessage: "Please check form data and try again."
                 });
             }
-        }
-    }
-
-    handleDateSelection = (event) => {        
-        var todayKey = moment(event).format("MM/DD/yyyy");
-        var excludedDates = this.state.excludedDatesDict[todayKey] ? this.state.excludedDatesDict[todayKey].map(x => new Date(x)) : [];
-
-        const date = new Date();
-        const isSelectedDateInFuture = event.toDateString() != date.toDateString();
-        
-        var currentMins = date.getMinutes();
-        var currentHours = date.getHours();
-        var minTime = new Date().setHours(currentHours, currentMins, 0, 0);
-        var maxTime = new Date(new Date().setHours(23, 59, 0, 0));
-        if (isSelectedDateInFuture) {
-            minTime = null;
-            maxTime = null;
-        }
-
-        this.setState({
-            excludedDates: excludedDates,
-            minTime: minTime,
-            maxTime: maxTime
-        });
-    }
-
-    async setExcludedDates(response) {
-        if (response.success === true) {
-            var todayKey = moment(new Date()).format("MM/DD/yyyy");
-            var excludedDates = response.unavailableDates[todayKey] ? response.unavailableDates[todayKey].map(x => new Date(x)) : []
-            this.setState({
-                excludedDatesDict: response.unavailableDates,
-                excludedDates: excludedDates
-            });
         }
     }
 
