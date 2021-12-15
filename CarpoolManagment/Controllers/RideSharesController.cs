@@ -207,6 +207,11 @@ namespace CarpoolManagement.Controllers
         }
 
         // This method should be replaced to CarsController, not sure if I'll have time to seperate service and controller for all.
+        /** Endpoint to get a range of dates when vehicle is unavailable 
+         *  params: carId
+         *  return: JSON result containing success info and message and a dictionary with key/values of (string)Date/OrderedSet of
+         *          unavailable dates.
+         * **/
         [Route("vehicle-availability/{carId}")]
         public JsonResult GetUnavailableDatesForVehicle(int carId)
         {
@@ -236,6 +241,11 @@ namespace CarpoolManagement.Controllers
         /* TODO - Not used currently, need to rethink logic about joining with unavailable vehicle dates
          * This method should be replaced to EmployeesController, not sure if I'll have time to seperate service and controller for all.
          * */
+        /** Endpoint to get a range of dates when employees are unavailable 
+         *  params: list of employee ids
+         *  return: JSON result containing success info and message and a dictionary with key/values of (string)Date/OrderedSet of
+         *          unavailable dates.
+         * **/
         [HttpPost]
         [Route("employee-availability")]
         public async Task<JsonResult> GetUnavailableDatesForEmployees(ICollection<int> employeeIds)
@@ -263,8 +273,12 @@ namespace CarpoolManagement.Controllers
             }
         }
 
+        /** Endpoint to get rideshares grouped by month
+         *  return: JSON result containing success info and message and a dictionary with key/values of (string)Date(MM/YYYY)/List of
+         *          rideshares for month.
+         * **/
         [Route("getRidesharesGroupedByMonth")]
-        public async Task<JsonResult> GetRidesharesForMonth()
+        public async Task<JsonResult> GetRidesharesGroupedByMonth()
         {
             try
             {

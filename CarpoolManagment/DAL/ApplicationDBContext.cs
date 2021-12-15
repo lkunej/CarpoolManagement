@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using CarpoolManagement.Models;
+﻿using CarpoolManagement.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using Newtonsoft.Json;
 
 namespace CarpoolManagement.DAL
 {
@@ -19,10 +12,12 @@ namespace CarpoolManagement.DAL
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Add constraint to ensure license plates are unique 
             modelBuilder.Entity<Car>()
                 .HasIndex(c => c.Plates)
                 .IsUnique();
 
+            // Add many to many relation between employees and rideshares
             modelBuilder.Entity<RideShare>()
                 .HasMany(rs => rs.Employees)
                 .WithMany(e => e.RideShares);

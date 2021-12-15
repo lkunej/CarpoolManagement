@@ -1,7 +1,6 @@
 using CarpoolManagement.DAL;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,13 +21,13 @@ namespace CarpoolManagement
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Using in memory database. This is usually used for testing purposes, but was requirement 
             services
             .AddEntityFrameworkInMemoryDatabase()
             .AddDbContext<ApplicationDBContext>((sp, options) =>
             {
                 options.UseInMemoryDatabase("CarpoolDB1").UseInternalServiceProvider(sp);
             });
-            //services.AddDbContext<ApplicationDBContext>(options => options.UseInMemoryDatabase("CarpoolDB1"));
             services.AddScoped<IDbInitializer, DbInitializer>();
             services.AddControllersWithViews();
 

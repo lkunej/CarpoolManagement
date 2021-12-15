@@ -1,12 +1,9 @@
 ﻿using CarpoolManagement.Models;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace CarpoolManagement.DAL
 {
@@ -19,6 +16,7 @@ namespace CarpoolManagement.DAL
             this._scopeFactory = scopeFactory;
         }
 
+        /** Method to prepoulate database with seed data for cars, cities and employees**/
         public void SeedData()
         {
             using (var serviceScope = _scopeFactory.CreateScope())
