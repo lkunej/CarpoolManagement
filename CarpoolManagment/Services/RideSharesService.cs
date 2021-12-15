@@ -121,11 +121,11 @@ namespace CarpoolManagement.Services
             }
         }
 
-        public Dictionary<string, List<DateTime>> GetUnavailableDatesForVehicle(int carId)
+        public Dictionary<string, SortedSet<DateTime>> GetUnavailableDatesForVehicle(int carId)
         {
             try
             {
-                Dictionary<string, List<DateTime>> res = new Dictionary<string, List<DateTime>>();
+                Dictionary<string, SortedSet<DateTime>> res = new Dictionary<string, SortedSet<DateTime>>();
 
                 var rideShares = _context.RideShares
                                    .Where(r => r.CarId == carId).ToList();                
@@ -134,34 +134,39 @@ namespace CarpoolManagement.Services
                 if (rideShares.Count == 0) return res;
 
                 foreach (var rs in rideShares)
-                {
-                    var tmpDate = rs.StartDate;
-
-                    if (tmpDate.Hour == 23) tmpDate = tmpDate.AddDays(1);
-                    var key = tmpDate.Date.ToShortDateString();
-                    var timeRange = CreateTimeRange(rs.StartDate, rs.EndDate);
-                    if (!res.ContainsKey(key))
+                {                    
+                    var tmpStartDate = rs.StartDate;
+                    while (tmpStartDate <= rs.EndDate)
                     {
-                        res.Add(key, timeRange);
-                    } else
-                    {
-                        res[key].AddRange(timeRange);
+                        if (tmpStartDate.Hour == 23) tmpStartDate = tmpStartDate.AddDays(1);
+                        var key = tmpStartDate.Date.ToShortDateString();
+                        var timeRange = CreateFillInTimeRangeSortedSet(rs.StartDate, rs.EndDate);
+                        if (!res.ContainsKey(key))
+                        {
+                            res.Add(key, timeRange);
+                        }
+                        else
+                        {
+                            res[key].UnionWith(timeRange);
+                        }
+                        tmpStartDate = tmpStartDate.AddMinutes(30);
                     }
+                    
                 }
 
-                foreach (KeyValuePair<string, List<DateTime>> entry in res)
+                foreach (KeyValuePair<string, SortedSet<DateTime>> entry in res)
                 {
-                    entry.Value.Sort((x, y) => x.CompareTo(y));
                     List<DateTime> singleDatesToAdd = new List<DateTime>();
-                    for (int i=0; i<entry.Value.Count-2; i++)
+                    var dates = entry.Value.ToList();
+                    for (int i = 0; i < dates.Count - 2; i++)
                     {
-                        if (entry.Value[i+1].Subtract(entry.Value[i]).TotalMinutes == 60)
+                        if (dates[i + 1].Subtract(dates[i]).TotalMinutes == 60)
                         {
-                            singleDatesToAdd.Add(entry.Value[i].AddMinutes(30));
+                            singleDatesToAdd.Add(dates[i].AddMinutes(30));
                         }
                     }
-                    res[entry.Key].AddRange(singleDatesToAdd);
-                }               
+                    res[entry.Key].UnionWith(singleDatesToAdd);
+                }
 
                 return res;
             }
@@ -171,14 +176,76 @@ namespace CarpoolManagement.Services
             }
         }
 
-        private List<DateTime> CreateTimeRange(DateTime startDate, DateTime endDate)
+        /* TODO - Not used currently, need to rethink logic about joining with unavailable vehicle dates*/
+        public async Task<Dictionary<string, SortedSet<DateTime>>> GetUnavailableDatesForEmployees(ICollection<int> employeeIds)
         {
-            List<DateTime> dateList = new List<DateTime>();
+            try
+            {
+                Dictionary<string, SortedSet<DateTime>> res = new Dictionary<string, SortedSet<DateTime>>();
+
+                var rideShares = await _context.RideShares.Include(c => c.Car)
+                                                          .Include(e => e.Employees.Where(x => employeeIds.Contains(x.EmployeeId)))
+                                                          .OrderByDescending(rs => rs.StartDate)
+                                                          .ToListAsync();
+
+                foreach (int id in employeeIds)
+                {                 
+
+                    // Return empty list, there are no rideshares yet.
+                    if (rideShares.Count == 0) return res;
+
+                    foreach (var rs in rideShares.Where(x => x.Employees.Count > 0))
+                    {
+                        var tmpStartDate = rs.StartDate;
+                        while (tmpStartDate <= rs.EndDate)
+                        {
+                            if (tmpStartDate.Hour == 23) tmpStartDate = tmpStartDate.AddDays(1);
+                            var key = tmpStartDate.Date.ToShortDateString();
+                            var timeRange = CreateFillInTimeRangeSortedSet(rs.StartDate, rs.EndDate);
+                            if (!res.ContainsKey(key))
+                            {
+                                res.Add(key, timeRange);
+                            }
+                            else
+                            {
+                                res[key].UnionWith(timeRange);
+                            }
+                            tmpStartDate = tmpStartDate.AddMinutes(30);
+                        }
+
+                    }
+
+                    foreach (KeyValuePair<string, SortedSet<DateTime>> entry in res)
+                    {
+                        List<DateTime> singleDatesToAdd = new List<DateTime>();
+                        var dates = entry.Value.ToList();
+                        for (int i = 0; i < dates.Count - 2; i++)
+                        {
+                            if (dates[i + 1].Subtract(dates[i]).TotalMinutes == 60)
+                            {
+                                singleDatesToAdd.Add(dates[i].AddMinutes(30));
+                            }
+                        }
+                        res[entry.Key].UnionWith(singleDatesToAdd);
+                    }
+                }                
+
+                return res;
+            }
+            catch (Exception e)
+            {
+                throw;
+            }
+        }
+
+        private SortedSet<DateTime> CreateFillInTimeRangeSortedSet(DateTime startDate, DateTime endDate)
+        {
+            SortedSet<DateTime> dateList = new SortedSet<DateTime>();
             while (startDate.AddMinutes(30) <= endDate)
             {
                 dateList.Add(startDate);
                 startDate = startDate.AddMinutes(30);
-                
+
             }
             return dateList;
         }

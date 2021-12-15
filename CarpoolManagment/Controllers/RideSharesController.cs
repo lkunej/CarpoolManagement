@@ -6,6 +6,7 @@ using CarpoolManagement.Models;
 using CarpoolManagement.Services;
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace CarpoolManagement.Controllers
 {
@@ -206,12 +207,42 @@ namespace CarpoolManagement.Controllers
         }
 
         // This method should be replaced to CarsController, not sure if I'll have time to seperate service and controller for all.
-        [Route("availability/{carId}")]
+        [Route("vehicle-availability/{carId}")]
         public JsonResult GetUnavailableDatesForVehicle(int carId)
         {
             try
             {
                 var unavailableDates = _service.GetUnavailableDatesForVehicle(carId);
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    unavailableDates = unavailableDates,
+                    message = "Success",
+                    statusCode = StatusCodes.Status200OK
+                });
+            }
+            catch
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "Something went wrong! Try again later.",
+                    statusCode = StatusCodes.Status500InternalServerError
+                });
+            }
+        }
+
+        /* TODO - Not used currently, need to rethink logic about joining with unavailable vehicle dates
+         * This method should be replaced to EmployeesController, not sure if I'll have time to seperate service and controller for all.
+         * */
+        [HttpPost]
+        [Route("employee-availability")]
+        public async Task<JsonResult> GetUnavailableDatesForEmployees(ICollection<int> employeeIds)
+        {
+            try
+            {
+                var unavailableDates = await _service.GetUnavailableDatesForEmployees(employeeIds);
 
                 return new JsonResult(new
                 {

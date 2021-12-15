@@ -34,6 +34,8 @@ export class CreateOrUpdateRideshare extends Component {
             errorMessage: null,
             excludedDatesDict: {},
             excludedDates: [],
+            excludedEmployeeDatesDict: {},
+            excludedEmployeeDates: [],
             minTime: new Date(new Date().setHours(startDate.getHours(), startDate.getMinutes(), 0, 0)),
             maxTime: new Date(new Date().setHours(23, 59, 0, 0)),
             rideshareToEditId: this.props.match.params.id || null,
@@ -88,7 +90,7 @@ export class CreateOrUpdateRideshare extends Component {
     }
 
     handleEmployeeChange = (event) => {
-        const labels = event.map(o => o.label)
+        var labels = event.map(o => o.label)
         const filtered = event.filter(({ label }, index) => !labels.includes(label, index + 1))
         var selectedEmployees = filtered.map(item => {
             return item.value
@@ -97,6 +99,9 @@ export class CreateOrUpdateRideshare extends Component {
             selectedEmployees: selectedEmployees,
             employeesValues: filtered
         });
+
+        // Need to rethink logic for combining unavailable employee/vehicle dates.
+        //this.getUnavailableDatesForEmployees(selectedEmployees);
     }
 
     handleSubmit = (event) => {
@@ -309,96 +314,97 @@ export class CreateOrUpdateRideshare extends Component {
                             </div>                            
                         </div>
                         <hr />
+                        <div className="row mt-1 mb-1">
+                            <div className="row mb-3"><h3>Rideshare Summary: </h3></div>
+                            <div className="row mt-1">
+                                {(this.state.startLoc || this.state.endLoc) &&
+                                    <div className="row">
+                                        <h4>Basic Trip Info:</h4>
+                                        <table className="table">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Relation</th>
+                                                    <th scope="col">Start Date (DD/MM/YYYY)</th>
+                                                    <th scope="col">End Date (DD/MM/YYYY)</th>
+                                                </tr>
+                                                <tr>
+                                                    <td>{startLocationLabel} &#10132; {endLocationLabel}</td>
+                                                    <td>{moment(this.state.startDate).format('DD/MM/YYYY HH:mm')}</td>
+                                                    <td>{moment(this.state.endDate).format('DD/MM/YYYY HH:mm')}</td>
+                                                </tr>
+                                            </thead>
+                                        </table>
+
+                                    </div>
+                                }
+                            </div>
+                            <div className="row mt-1">
+                                {this.state.selectedCar &&
+                                    <div className="row">
+                                        <h4>Vehicle Information:</h4>
+                                        <table className="table">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Name</th>
+                                                    <th scope="col">Type</th>
+                                                    <th scope="col">Color</th>
+                                                    <th scope="col">Plates</th>
+                                                    <th scope="col">Number of seats</th>
+                                                </tr>
+                                                <tr>
+                                                    <td>{this.state.selectedCar.name}</td>
+                                                    <td>{this.state.selectedCar.type}</td>
+                                                    <td>{this.state.selectedCar.color}</td>
+                                                    <td>{this.state.selectedCar.plates}</td>
+                                                    <td>{this.state.selectedCar.numOfSeats}</td>
+                                                </tr>
+                                            </thead>
+                                        </table>
+
+                                    </div>
+                                }
+                            </div>
+                            <div className="row mt-1">
+                                {
+                                    this.state.selectedEmployees.length > 0 ?
+                                        this.state.selectedEmployees.some(e => e.isDriver === true) ?
+                                            <div className="row">
+                                                <h4>Employee Information:</h4>
+                                                <table className="table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th scope="col">Name</th>
+                                                            <th scope="col">Has License</th>
+                                                        </tr>
+                                                        {renderedSelectedEmployees}
+                                                    </thead>
+                                                </table>
+                                            </div>
+                                            :
+                                            <div className="row">
+                                                <div className="alert alert-warning" role="alert">
+                                                    <p> None of the passengers have a drivers license. </p>
+                                                </div>
+                                                <h4>Employee Information:</h4>
+                                                <table className="table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th scope="col">Name</th>
+                                                            <th scope="col">Has License</th>
+                                                        </tr>
+                                                        {renderedSelectedEmployees}
+                                                    </thead>
+                                                </table>
+                                            </div>
+                                        :
+                                        null
+                                }
+                            </div>
+                        </div>
                         {renderedButton}
                     </form>
                 </div>
-                <div className="row mt-1 mb-1">
-                    <div className="row mb-3"><h3>Rideshare Summary: </h3></div>
-                    <div className="row mt-1">
-                        {(this.state.startLoc || this.state.endLoc) &&
-                            <div className="row">
-                                <h4>Basic Trip Info:</h4>
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">Relation</th>
-                                            <th scope="col">Start Date (DD/MM/YYYY)</th>
-                                            <th scope="col">End Date (DD/MM/YYYY)</th>
-                                        </tr>
-                                        <tr>
-                                            <td>{startLocationLabel} &#10132; {endLocationLabel}</td>
-                                            <td>{ moment(this.state.startDate).format('DD/MM/YYYY HH:mm')}</td>
-                                            <td>{ moment(this.state.endDate).format('DD/MM/YYYY HH:mm')}</td>
-                                        </tr>
-                                    </thead>
-                                </table>
-
-                            </div>
-                        }
-                    </div>
-                    <div className="row mt-1">                                                
-                        {this.state.selectedCar &&
-                            <div className="row">
-                                <h4>Vehicle Information:</h4>
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">Name</th>
-                                            <th scope="col">Type</th>
-                                            <th scope="col">Color</th>
-                                            <th scope="col">Plates</th>
-                                            <th scope="col">Number of seats</th>
-                                        </tr>
-                                        <tr>
-                                            <td>{this.state.selectedCar.name}</td>
-                                            <td>{this.state.selectedCar.type}</td>
-                                            <td>{this.state.selectedCar.color}</td>
-                                            <td>{this.state.selectedCar.plates}</td>
-                                            <td>{this.state.selectedCar.numOfSeats}</td>
-                                        </tr>
-                                    </thead>
-                                </table>
-
-                            </div>
-                        }
-                    </div>
-                    <div className="row mt-1">
-                        {
-                            this.state.selectedEmployees.length > 0 ?
-                                this.state.selectedEmployees.some(e => e.isDriver === true) ?
-                                    <div className="row">
-                                        <h4>Employee Information:</h4>
-                                        <table className="table">
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col">Name</th>
-                                                    <th scope="col">Has License</th>
-                                                </tr>
-                                                {renderedSelectedEmployees}
-                                            </thead>
-                                        </table>
-                                    </div>
-                                    :
-                                    <div className="row">
-                                        <div className="alert alert-warning" role="alert">
-                                            <p> None of the passengers have a drivers license. </p>
-                                        </div>
-                                        <h4>Employee Information:</h4>
-                                        <table className="table">
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col">Name</th>
-                                                    <th scope="col">Has License</th>
-                                                </tr>
-                                                {renderedSelectedEmployees}
-                                            </thead>
-                                        </table>
-                                    </div>
-                                :
-                                null
-                        }
-                    </div>
-                </div>                
+                    
             </div>
         );
 
@@ -420,7 +426,7 @@ export class CreateOrUpdateRideshare extends Component {
         this.setState({ employees: data });
     }
     async getUnavailableDatesForVehicle(carId) {
-        const response = await fetch('api/rideshares/availability/' + carId);
+        const response = await fetch('api/rideshares/vehicle-availability/' + carId);
         const data = await response.json();
         
         if (data.success === true) {
@@ -430,8 +436,29 @@ export class CreateOrUpdateRideshare extends Component {
                 excludedDatesDict: data.unavailableDates,
                 excludedDates: excludedDates
             });
+        }        
+    }
+    async getUnavailableDatesForEmployees(selectedEmployees) {
+        if (selectedEmployees.length > 0) {
+            var model = selectedEmployees.map(x => x.employeeId);
+
+            const requestOptions = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(model)
+            };
+            const response = await fetch('api/rideshares/employee-availability', requestOptions);
+            const data = await response.json();
+
+            if (data.success === true) {
+                var todayKey = moment(new Date()).format("MM/DD/yyyy");
+                var excludedEmployeeDates = data.unavailableDates[todayKey] ? data.unavailableDates[todayKey].map(x => new Date(x)) : []
+                this.setState({
+                    excludedDatesEmployeeDict: data.unavailableDates,
+                    excludedEmployeeDates: excludedEmployeeDates
+                });
+            }
         }
-        
     }
     async postNewRideshare() {        
         var model = {

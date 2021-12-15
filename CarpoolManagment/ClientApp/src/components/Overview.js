@@ -1,7 +1,6 @@
-﻿import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+﻿import React, { Component, useState } from 'react';
+import { PieChart } from 'react-minimal-pie-chart';
 import DatePicker from "react-datepicker";
-import Select from 'react-select'
 import moment from 'moment'
 
 export class Overview extends Component {
@@ -11,7 +10,8 @@ export class Overview extends Component {
         this.state = {
             rideSharesPerMonth: {},
             rideShares: [],
-            startDate: new Date()
+            startDate: new Date(),
+            hovered: null
         };
     }
 
@@ -42,8 +42,19 @@ export class Overview extends Component {
         });
     }
 
+    getRandomColor() {
+        var letters = '0123456789ABCDEF';
+        var color = '#';
+        for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
     render() {
         var renderedItems = [];
+        var pieChartData = [];
+        var renderedLegends = [];
         if (this.state.rideShares.length > 0) {
             renderedItems = this.state.rideShares.map((item, idx) => {
 
@@ -77,8 +88,33 @@ export class Overview extends Component {
                     </tr>
                 );
             });
-        }
 
+            var ridesPerCar = {}
+            this.state.rideShares.forEach((rideshare) => {
+                if (!(rideshare.car.name in ridesPerCar)) {
+                    ridesPerCar[rideshare.car.name] = 1
+                } else {
+                    ridesPerCar[rideshare.car.name] += 1
+                }                
+            });            
+
+            for (const [key, value] of Object.entries(ridesPerCar)) {
+                var randomColor = this.getRandomColor();
+                var dataPoint = {
+                    title: key,
+                    value: value,
+                    color: randomColor,
+                    tooltip: value
+                }
+                pieChartData.push(dataPoint);
+            }
+            
+            renderedLegends = pieChartData.map((data) => {
+                return (
+                    <li key={data.title} style={{ color: data.color, fontSize: '20px'}}><strong>{data.title}</strong></li>
+                );
+            });
+        }
 
         return (
             <div className="container">
@@ -116,6 +152,37 @@ export class Overview extends Component {
                                 {renderedItems}
                             </thead>
                         </table>
+                    </div>
+                </div>
+                <div className="row">
+                    <div className="row">
+                        <h2>Number Of Rides:</h2>
+                    </div>
+                    <div className="row">
+                        <div className="col-md-10">
+                            <PieChart
+                                data={pieChartData}
+                                style={{ height: '30vh' }}
+                                lineWidth={20}
+                                paddingAngle={18}
+                                rounded
+                                animate
+                                label={({ dataEntry }) => dataEntry.value}
+                                labelStyle={(index) => ({
+                                    fill: pieChartData[index].color,
+                                    fontSize: '5px',
+                                    fontFamily: 'sans-serif',
+                                })}
+                                labelPosition={60}
+                            />;
+                        </div>
+                        <div className="col-md-2">
+                            <h4>Legend:</h4>
+                            <ul className="list-unstyled">
+                                {renderedLegends}
+                            </ul>
+                        </div>
+                        
                     </div>
                 </div>
             </div>
