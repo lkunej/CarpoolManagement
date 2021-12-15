@@ -462,8 +462,6 @@ export class CreateOrUpdateRideshare extends Component {
                     
             </div>
         );
-
-
     }
 
     // TODO - Need to rethink logic for combining vehicle and employee unavailable dates.
