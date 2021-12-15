@@ -2,6 +2,7 @@
 import { PieChart } from 'react-minimal-pie-chart';
 import DatePicker from "react-datepicker";
 import moment from 'moment'
+import { getRideshareDataPerMonth } from '../API/ApiHelper';
 
 export class Overview extends Component {
     static displayName = Overview.name;
@@ -16,7 +17,12 @@ export class Overview extends Component {
     }
 
     async componentDidMount() {
-        await this.getRideshareDataPerMonth();
+        const response = await getRideshareDataPerMonth();
+        if (response.success) {
+            this.setState({ rideSharesPerMonth: response.rideShares.rideShares });
+        } else {
+            alert(response.message);
+        }
         var key = moment().format("MM/yyyy");
         this.setRideshareDataForMonth(key);
         
@@ -170,7 +176,7 @@ export class Overview extends Component {
                                 label={({ dataEntry }) => dataEntry.value}
                                 labelStyle={(index) => ({
                                     fill: pieChartData[index].color,
-                                    fontSize: '5px',
+                                    fontSize: '12px',
                                     fontFamily: 'sans-serif',
                                 })}
                                 labelPosition={60}
@@ -187,15 +193,5 @@ export class Overview extends Component {
                 </div>
             </div>
         );
-    }
-
-    async getRideshareDataPerMonth() {
-        const response = await fetch('api/rideshares/getRidesharesGroupedByMonth');
-        const data = await response.json();
-        if (data.success) {
-            this.setState({ rideSharesPerMonth: data.rideShares.rideShares });
-        } else {
-            alert(data.message);
-        }
     }
 }

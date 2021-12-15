@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import moment from 'moment'
+import { populateRideShareData, deleteRideShare } from '../API/ApiHelper';
 
 export class Home extends Component {
     static displayName = Home.name;
@@ -11,17 +12,33 @@ export class Home extends Component {
         };
     }
 
-    componentDidMount() {
-        this.populateRideShareData();
+    async componentDidMount() {
+        const data = await populateRideShareData();
+        if (data.success) {
+            this.setState({ rideShares: data.rideShares });
+        } else {
+            alert(data.message);
+        }
     }
 
-    handleDeleteButtonClick = (event) => {
+    handleDeleteButtonClick = async(event) => {
         event.preventDefault();
         if (window.confirm("Are you sure you want to delete?") === true) {
-            this.deleteRideShare(event.target.dataset.id)
+            const id = event.target.dataset.id;
+            const data = await deleteRideShare(id)
+            if (data.success) {
+                alert(data.message);
+                this.removeRideshareFromList(id);
+                //window.location.reload()
+            } else {
+                alert(data.message);
+            }
         }        
     }
 
+    /** Function to remove rideshare from state when successfully, 
+     *  deleted from backend. Causes rerendering but no window reload.
+     */
     removeRideshareFromList = (id) => {
         var rideShares = this.state.rideShares;
         var toRemoveIndex = rideShares.findIndex(x => x.rideShareId == id);
@@ -36,9 +53,11 @@ export class Home extends Component {
     render() {
 
         var renderedItems = [];
+        /** Create rows for rideshare table if any rideshares returned from backend **/
         if (this.state.rideShares.length > 0) {
             renderedItems = this.state.rideShares.map((item, idx) => {
 
+                /** Create a list of <li> elements representing employees **/
                 var renderedEmployees = [];
                     if (item.employees) {
                         renderedEmployees = item.employees.map((emp, idx) => {
@@ -48,6 +67,7 @@ export class Home extends Component {
                         });
                     }
 
+                /** Create rows for table that represent a rideshare entry **/
                 return (
                     <tr key={item.rideShareId}>
                         <td className="h3 align-middle">{item.startLocation} &#10132; {item.endLocation}</td>
@@ -100,28 +120,4 @@ export class Home extends Component {
             </div>
         );
   }
-
-    async populateRideShareData() {
-        const response = await fetch('api/rideshares');
-        const data = await response.json();
-        if (data.success) {
-            this.setState({ rideShares: data.rideShares });
-        } else {
-            alert(data.message);
-        }        
-    }
-    async deleteRideShare(id) {
-        const requestOptions = {
-            method: 'DELETE'
-        };
-        const response = await fetch('api/rideshares/'+id, requestOptions);
-        const data = await response.json();
-        if (data.success) {
-            alert(data.message);
-            this.removeRideshareFromList(id);
-            //window.location.reload()
-        } else {
-            alert(data.message);
-        }
-    }
 }

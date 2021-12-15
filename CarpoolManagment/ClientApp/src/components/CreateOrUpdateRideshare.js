@@ -2,6 +2,12 @@ import React, { Component } from 'react';
 import DatePicker from "react-datepicker";
 import Select from 'react-select'
 import moment from 'moment'
+import {
+    populateCitiesData, populateCarsData,
+    populateEmployeesData, getUnavailableDatesForVehicle,
+    postNewRideshare, putUpdatedRideshare,
+    getRideShareToEdit
+} from '../API/ApiHelper';
 
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -12,11 +18,11 @@ export class CreateOrUpdateRideshare extends Component {
         var startDate = new Date();
         var minutes = startDate.getMinutes();
         // round to next half hour
-        startDate.setSeconds(0, 0)
+        startDate.setSeconds(0, 0);
         if (minutes < 30) {
             startDate.setMinutes(30);
         } else if (minutes >= 30) {
-            startDate.setHours(startDate.getHours()+1)
+            startDate.setHours(startDate.getHours() + 1);
             startDate.setMinutes(0);            
         }
         
@@ -44,20 +50,31 @@ export class CreateOrUpdateRideshare extends Component {
     }
 
     async componentDidMount() {
-        await this.populateCitiesData()
-        await this.populateCarsData()
-        await this.populateEmployeesData()
-        if (this.state.rideshareToEditId) {
-            this.prepopulateFields();
-        }
+        const cities = await populateCitiesData();
+        const cars = await populateCarsData();
+        const employees = await populateEmployeesData();
+        this.setState({
+            cities: cities,
+            cars: cars,
+            employees: employees
+        }, () => {
+            if (this.state.rideshareToEditId) {
+                this.prepopulateFields();
+            }
+        });
     }
 
     async prepopulateFields() {
-        await this.getRideShareToEdit(this.state.rideshareToEditId);
+        const response = await getRideShareToEdit(this.state.rideshareToEditId);
+        if (response.success === true) {
+            this.setState({
+                rideShareToEdit: response.rideShare
+            });
+        }
         const defaultEmployees = this.createDefaultEmployeeValues(this.state.rideShareToEdit.employees);
-        var startLoc = (this.state.cities.find(x => x.name === this.state.rideShareToEdit.startLocation))
-        var endLoc = (this.state.cities.find(x => x.name === this.state.rideShareToEdit.endLocation))
-        var selectedCar = this.state.rideShareToEdit.car
+        const startLoc = (this.state.cities.find(x => x.name === this.state.rideShareToEdit.startLocation))
+        const endLoc = (this.state.cities.find(x => x.name === this.state.rideShareToEdit.endLocation))
+        const selectedCar = this.state.rideShareToEdit.car
         this.setState({
             selectedCar: selectedCar,
             selectedEmployees: this.state.rideShareToEdit.employees,
@@ -67,7 +84,7 @@ export class CreateOrUpdateRideshare extends Component {
             startDate: new Date(this.state.rideShareToEdit.startDate),
             endDate: new Date(this.state.rideShareToEdit.endDate),
         })
-        this.getUnavailableDatesForVehicle(selectedCar.carId);
+        await this.setExcludedDates(await getUnavailableDatesForVehicle(selectedCar.carId));
     }
 
     createDefaultEmployeeValues(defaultEmployees) {
@@ -79,10 +96,10 @@ export class CreateOrUpdateRideshare extends Component {
         
     }
 
-    handleCarChange = (event) => {
+    handleCarChange = async(event) => {
         var selectedCar = this.state.cars.find(x => x.name === event.target.value)
         if (selectedCar) {
-            this.getUnavailableDatesForVehicle(selectedCar.carId);
+            await this.setExcludedDates(await getUnavailableDatesForVehicle(selectedCar.carId));
             this.setState({
                 selectedCar: selectedCar
             });
@@ -104,14 +121,41 @@ export class CreateOrUpdateRideshare extends Component {
         //this.getUnavailableDatesForEmployees(selectedEmployees);
     }
 
-    handleSubmit = (event) => {
+    handleSubmit = async(event) => {
         event.preventDefault();
-        if (!this.state.rideshareToEditId) {
-            this.postNewRideshare();
-        } else {
-            this.putUpdatedRideshare(this.state.rideshareToEditId);
+        var model = {
+            "RideShareId": this.state.rideshareToEditId || 0,
+            "StartLocation": this.state.startLoc ? this.state.startLoc.label : null,
+            "EndLocation": this.state.endLoc ? this.state.endLoc.label : null,
+            "StartDate": this.state.startDate,
+            "EndDate": this.state.endDate,
+            "CarId": this.state.selectedCar ? this.state.selectedCar.carId : null,
+            "Employees": this.state.selectedEmployees
         }
-        
+        if (!this.state.rideshareToEditId) {          
+            this.handleSubmitResponse(await postNewRideshare(model));
+        } else {
+            this.handleSubmitResponse(await putUpdatedRideshare(this.state.rideshareToEditId, model));
+        }   
+    }
+
+    handleSubmitResponse(response) {
+        // handle response from backend
+        if (response.success === true) {
+            window.location = "/";
+        } else if (response.success === false) {
+            // handle response from backend
+            this.setState({
+                errorMessage: response.message
+            });
+        } else {
+            // handle frontend validation errors
+            if (response.title) {
+                this.setState({
+                    errorMessage: "Please check form data and try again."
+                });
+            }
+        }
     }
 
     handleDateSelection = (event) => {        
@@ -136,7 +180,18 @@ export class CreateOrUpdateRideshare extends Component {
             maxTime: maxTime
         });
     }
-    
+
+    async setExcludedDates(response) {
+        if (response.success === true) {
+            var todayKey = moment(new Date()).format("MM/DD/yyyy");
+            var excludedDates = response.unavailableDates[todayKey] ? response.unavailableDates[todayKey].map(x => new Date(x)) : []
+            this.setState({
+                excludedDatesDict: response.unavailableDates,
+                excludedDates: excludedDates
+            });
+        }
+    }
+
     render() {
         var renderedCities = [];
         if (this.state.cities.length > 0) {
@@ -410,34 +465,8 @@ export class CreateOrUpdateRideshare extends Component {
 
 
     }
-    async populateCitiesData() {
-        const response = await fetch('api/cities');
-        const data = await response.json();
-        this.setState({ cities: data });
-    }
-    async populateCarsData() {
-        const response = await fetch('api/cars');
-        const data = await response.json();
-        this.setState({ cars: data });
-    }
-    async populateEmployeesData() {
-        const response = await fetch('api/employees');
-        const data = await response.json();
-        this.setState({ employees: data });
-    }
-    async getUnavailableDatesForVehicle(carId) {
-        const response = await fetch('api/rideshares/vehicle-availability/' + carId);
-        const data = await response.json();
-        
-        if (data.success === true) {
-            var todayKey = moment(new Date()).format("MM/DD/yyyy");
-            var excludedDates = data.unavailableDates[todayKey] ? data.unavailableDates[todayKey].map(x => new Date(x)) : []
-            this.setState({
-                excludedDatesDict: data.unavailableDates,
-                excludedDates: excludedDates
-            });
-        }        
-    }
+
+    // TODO - Need to rethink logic for combining vehicle and employee unavailable dates.
     async getUnavailableDatesForEmployees(selectedEmployees) {
         if (selectedEmployees.length > 0) {
             var model = selectedEmployees.map(x => x.employeeId);
@@ -459,83 +488,5 @@ export class CreateOrUpdateRideshare extends Component {
                 });
             }
         }
-    }
-    async postNewRideshare() {        
-        var model = {
-            "StartLocation": this.state.startLoc ? this.state.startLoc.label : null,
-            "EndLocation": this.state.endLoc ? this.state.endLoc.label : null,
-            "StartDate": this.state.startDate,
-            "EndDate": this.state.endDate,
-            "CarId": this.state.selectedCar ? this.state.selectedCar.carId : null,
-            "Employees": this.state.selectedEmployees
-        }
-        const requestOptions = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(model)
-        };
-        const response = await fetch('api/rideshares', requestOptions);
-        const data = await response.json();
-        // handle response from backend
-        if (data.success === true) {
-            window.location = "/";
-        } else if (data.success === false) {
-            // handle response from backend
-            this.setState({
-                errorMessage: data.message
-            });
-        } else {
-            // handle frontend validation errors
-            if (data.title) {
-                this.setState({
-                    errorMessage: "Please check form data and try again."
-                });
-            }
-        }        
-    }
-    async putUpdatedRideshare(id) {
-        var model = {
-            "RideShareId": id,
-            "StartLocation": this.state.startLoc.label,
-            "EndLocation": this.state.endLoc.label,
-            "StartDate": this.state.startDate,
-            "EndDate": this.state.endDate,
-            "CarId": this.state.selectedCar ? this.state.selectedCar.carId : null,
-            "Employees": this.state.selectedEmployees
-        }
-        const requestOptions = {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(model)
-        };
-        const response = await fetch('api/rideshares/'+id, requestOptions);
-        const data = await response.json();
-        // handle response from backend
-        if (data.success === true) {
-            window.location = "/";
-        } else if (data.success === false) {
-            // handle response from backend
-            this.setState({
-                errorMessage: data.message
-            });
-        } else {
-            // handle frontend validation errors
-            if (data.title) {
-                this.setState({
-                    errorMessage: "Please check form data and try again."
-                });
-            }
-        }
-    }    
-    async getRideShareToEdit(rideshareId) {
-        const response = await fetch('api/rideshares/' + rideshareId);
-        const data = await response.json();
-
-        if (data.success === true) {
-            this.setState({
-                rideShareToEdit: data.rideShare
-            });
-        }
-
     }
 }
