@@ -10,7 +10,6 @@ export async function getRideshareDataPerMonth() {
     const response = await fetch('api/rideshares/getRidesharesGroupedByMonth');
     return await response.json();
 }
-
 export async function deleteRideShare(id) {
     const requestOptions = {
         method: 'DELETE'
@@ -20,7 +19,6 @@ export async function deleteRideShare(id) {
 }
 
 /************************* CreateOrUpdateRideshare *************************/
-
 export async function populateCitiesData() {
     const response = await fetch('api/cities');
     return await response.json();
