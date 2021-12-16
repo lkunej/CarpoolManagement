@@ -458,8 +458,7 @@ export class CreateOrUpdateRideshare extends Component {
                         </div>
                         {renderedButton}
                     </form>
-                </div>
-                    
+                </div>               
             </div>
         );
     }
